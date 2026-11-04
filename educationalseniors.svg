@@ -1,114 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16">
-  <foreignObject width="100%" height="100%">
-    <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="referrer" content="no-referrer" />
-        <style><![CDATA[
-          html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;
-            font-family:system-ui,-apple-system,sans-serif;color:#fff}
-          .wrap{position:fixed;inset:0;display:flex;flex-direction:column;
-            align-items:center;justify-content:center;gap:18px}
-          .spin{width:38px;height:38px;border-radius:50%;
-            border:3px solid rgba(255,255,255,.12);border-top-color:#2540ff;
-            animation:sp 0.8s linear infinite}
-          @keyframes sp{to{transform:rotate(360deg)}}
-          .msg{font-size:13px;color:rgba(255,255,255,.55)}
-          .err{color:#ff8e88;max-width:280px;text-align:center;line-height:1.5}
-        ]]></style>
-      </head>
-      <body>
-        <div class="wrap">
-          <div class="spin" id="sp"></div>
-          <div class="msg" id="msg">Loading…</div>
-        </div>
-        <script><![CDATA[
-        (function () {
-          var msg = document.getElementById("msg");
-          var sp = document.getElementById("sp");
-          var CACHE = "xylora.host";
-          var PROBE_MS = 4500;
-          var BAKED = ["https://xylora.org"];
-
-          function say(t) { try { msg.textContent = t; } catch (e) {} }
-          function norm(h) {
-            var s = ("" + h).trim().replace(/\/+$/, "");
-            return /^https?:\/\//.test(s) ? s : "https://" + s;
-          }
-          function remembered() {
-            try { return localStorage.getItem(CACHE) || ""; } catch (e) { return ""; }
-          }
-          function remember(h) {
-            try { localStorage.setItem(CACHE, h); } catch (e) {}
-          }
-
-          function loadHosts() {
-            var here = (document.currentScript && document.currentScript.src) || location.href;
-            var url = here.replace(/[^/]*(?:[?#].*)?$/, "") + "apis.json";
-            return fetch(url, { cache: "no-store" })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (j) {
-                var list = (j && Array.isArray(j.hosts)) ? j.hosts : [];
-                return list.length ? list.concat(BAKED) : BAKED;
-              })
-              .catch(function () { return BAKED; });
-          }
-
-          function withTimeout(p, ms) {
-            return new Promise(function (resolve) {
-              var done = false;
-              var t = setTimeout(function () { if (!done) { done = true; resolve(false); } }, ms);
-              p.then(function (v) { if (!done) { done = true; clearTimeout(t); resolve(v); } },
-                     function () { if (!done) { done = true; clearTimeout(t); resolve(false); } });
-            });
-          }
-
-          function ping(host) {
-            return withTimeout(
-              fetch(host + "/", { cache: "no-store", mode: "no-cors" })
-                .then(function () { return true; }),
-              PROBE_MS
-            );
-          }
-
-          function go(host) {
-            remember(host);
-            say("Opening…");
-            location.replace(host + "/");
-          }
-
-          function firstThatPasses(hosts) {
-            return new Promise(function (resolve) {
-              var left = hosts.length, won = false;
-              if (!left) return resolve(null);
-              hosts.forEach(function (h) {
-                ping(h).then(function (ok) {
-                  if (won) return;
-                  if (ok) { won = true; resolve(h); return; }
-                  if (--left === 0) resolve(null);
-                });
-              });
-            });
-          }
-
-          loadHosts().then(function (raw) {
-            var seen = {}, hosts = [];
-            [remembered()].concat(raw).forEach(function (h) {
-              if (!h) return;
-              var n = norm(h);
-              if (!seen[n]) { seen[n] = 1; hosts.push(n); }
-            });
-            firstThatPasses(hosts).then(function (hit) {
-              if (hit) return go(hit);
-              sp.style.display = "none";
-              msg.className = "msg err";
-              say("Couldn't reach Xylora right now. Check your connection and try again.");
-            });
-          });
-        })();
-        ]]></script>
-      </body>
-    </html>
-  </foreignObject>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+<title>Xylora</title>
+<foreignObject x="0" y="0" width="100%" height="100%">
+<html xmlns="http://www.w3.org/1999/xhtml" style="margin:0;width:100%;height:100%;background:#000">
+<body style="margin:0;width:100%;height:100%;overflow:hidden;background:#000">
+<iframe id="x" title="Xylora" style="display:block;width:100%;height:100%;border:0" allow="fullscreen; autoplay; gamepad; clipboard-write; clipboard-read; microphone; camera; keyboard-map; pointer-lock"></iframe>
+<script type="text/plain" id="p">PAGE_BASE64</script>
+<script><![CDATA[
+(function () {
+  var f = document.getElementById("x");
+  var s = atob(document.getElementById("p").textContent.trim());
+  var u = new Uint8Array(s.length);
+  for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+  f.srcdoc = new TextDecoder().decode(u);
+  f.focus();
+})();
+]]></script>
+</body>
+</html>
+</foreignObject>
 </svg>
