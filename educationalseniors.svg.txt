@@ -1,0 +1,114 @@
+svg xmlns=httpwww.w3.org2000svg width=100% height=100% viewBox=0 0 16 16
+  foreignObject width=100% height=100%
+    html xmlns=httpwww.w3.org1999xhtml lang=en
+      head
+        meta charset=UTF-8 
+        meta name=viewport content=width=device-width, initial-scale=1.0 
+        meta name=referrer content=no-referrer 
+        style![CDATA[
+          html,body{margin0;width100%;height100%;overflowhidden;background#000;
+            font-familysystem-ui,-apple-system,sans-serif;color#fff}
+          .wrap{positionfixed;inset0;displayflex;flex-directioncolumn;
+            align-itemscenter;justify-contentcenter;gap18px}
+          .spin{width38px;height38px;border-radius50%;
+            border3px solid rgba(255,255,255,.12);border-top-color#2540ff;
+            animationsp 0.8s linear infinite}
+          @keyframes sp{to{transformrotate(360deg)}}
+          .msg{font-size13px;colorrgba(255,255,255,.55)}
+          .err{color#ff8e88;max-width280px;text-aligncenter;line-height1.5}
+        ]]style
+      head
+      body
+        div class=wrap
+          div class=spin id=spdiv
+          div class=msg id=msgLoading…div
+        div
+        script![CDATA[
+        (function () {
+          var msg = document.getElementById(msg);
+          var sp = document.getElementById(sp);
+          var CACHE = xylora.host;
+          var PROBE_MS = 4500;
+          var BAKED = [httpsxylora.org];
+
+          function say(t) { try { msg.textContent = t; } catch (e) {} }
+          function norm(h) {
+            var s = ( + h).trim().replace(+$, );
+            return ^https.test(s)  s  https + s;
+          }
+          function remembered() {
+            try { return localStorage.getItem(CACHE)  ; } catch (e) { return ; }
+          }
+          function remember(h) {
+            try { localStorage.setItem(CACHE, h); } catch (e) {}
+          }
+
+          function loadHosts() {
+            var here = (document.currentScript && document.currentScript.src)  location.href;
+            var url = here.replace([^]([#].)$, ) + apis.json;
+            return fetch(url, { cache no-store })
+              .then(function (r) { return r.ok  r.json()  null; })
+              .then(function (j) {
+                var list = (j && Array.isArray(j.hosts))  j.hosts  [];
+                return list.length  list.concat(BAKED)  BAKED;
+              })
+              .catch(function () { return BAKED; });
+          }
+
+          function withTimeout(p, ms) {
+            return new Promise(function (resolve) {
+              var done = false;
+              var t = setTimeout(function () { if (!done) { done = true; resolve(false); } }, ms);
+              p.then(function (v) { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+                     function () { if (!done) { done = true; clearTimeout(t); resolve(false); } });
+            });
+          }
+
+          function ping(host) {
+            return withTimeout(
+              fetch(host + , { cache no-store, mode no-cors })
+                .then(function () { return true; }),
+              PROBE_MS
+            );
+          }
+
+          function go(host) {
+            remember(host);
+            say(Opening…);
+            location.replace(host + );
+          }
+
+          function firstThatPasses(hosts) {
+            return new Promise(function (resolve) {
+              var left = hosts.length, won = false;
+              if (!left) return resolve(null);
+              hosts.forEach(function (h) {
+                ping(h).then(function (ok) {
+                  if (won) return;
+                  if (ok) { won = true; resolve(h); return; }
+                  if (--left === 0) resolve(null);
+                });
+              });
+            });
+          }
+
+          loadHosts().then(function (raw) {
+            var seen = {}, hosts = [];
+            [remembered()].concat(raw).forEach(function (h) {
+              if (!h) return;
+              var n = norm(h);
+              if (!seen[n]) { seen[n] = 1; hosts.push(n); }
+            });
+            firstThatPasses(hosts).then(function (hit) {
+              if (hit) return go(hit);
+              sp.style.display = none;
+              msg.className = msg err;
+              say(Couldn't reach Xylora right now. Check your connection and try again.);
+            });
+          });
+        })();
+        ]]script
+      body
+    html
+  foreignObject
+svg
